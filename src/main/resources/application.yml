@@ -14,7 +14,7 @@ spring:
     show-sql: true
 
 jwt:
-  secret: bXlzdXBlcnNlY3JldGtleQ==
+  secret: NzhkYjM0N2E2ZDYyNzA3NzJlMjU4YTI2NDM5MGE0NGU2ZDE2NDM3Y2M2YjE5MWE3N2U1YWM5NzE4ZGIwZDYwYg==
   expiration: 86400000
   refresh-token-expiration: 600000
 

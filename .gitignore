@@ -23,3 +23,11 @@ buildNumber.properties
 
 # Log files
 *.log
+
+# Frontend
+frontend/node_modules
+frontend/.next/
+frontend/out/
+frontend/.DS_Store
+frontend/*.local
+frontend/.env.local

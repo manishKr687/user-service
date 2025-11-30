@@ -22,6 +22,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RefreshTokenService {
 
+    private static final String USER_NOT_FOUND = "User not found";
+    private static final String REFRESH_TOKEN_EXPIRED = "Refresh token is expired. Please make a new login..!";
+
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
@@ -36,12 +39,25 @@ public class RefreshTokenService {
      * @throws UsernameNotFoundException if the user is not found.
      */
     public RefreshToken createRefreshToken(String username) {
-        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
-        RefreshToken refreshToken = RefreshToken.builder()
-                .userInfo(user)
-                .token(UUID.randomUUID().toString())
-                .expiryDate(Instant.now().plusMillis(refreshTokenExpiration))
-                .build();
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
+
+        // Check if a refresh token already exists for the user
+        Optional<RefreshToken> existingToken = refreshTokenRepository.findByUserInfo(user);
+
+        RefreshToken refreshToken;
+        if (existingToken.isPresent()) {
+            // Update the existing token
+            refreshToken = existingToken.get();
+            refreshToken.setToken(UUID.randomUUID().toString());
+            refreshToken.setExpiryDate(Instant.now().plusMillis(refreshTokenExpiration));
+        } else {
+            // Create a new token
+            refreshToken = RefreshToken.builder()
+                    .userInfo(user)
+                    .token(UUID.randomUUID().toString())
+                    .expiryDate(Instant.now().plusMillis(refreshTokenExpiration))
+                    .build();
+        }
         return refreshTokenRepository.save(refreshToken);
     }
 
@@ -66,7 +82,7 @@ public class RefreshTokenService {
     public RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
             refreshTokenRepository.delete(token);
-            throw new TokenRefreshException(token.getToken(), "Refresh token is expired. Please make a new login..!");
+            throw new TokenRefreshException(token.getToken(), REFRESH_TOKEN_EXPIRED);
         }
         return token;
     }

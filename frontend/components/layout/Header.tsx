@@ -29,6 +29,7 @@ export default function Header() {
               E-commerce
             </Link>
           </Typography>
+          <Button color="inherit" component={Link} href="/products">Products</Button>
           {isAuthenticated ? (
             <>
               <Button color="inherit" component={Link} href="/profile">Profile</Button>

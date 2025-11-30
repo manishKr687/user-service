@@ -9,6 +9,8 @@ import com.ecommerce.user.service.JwtService;
 import com.ecommerce.user.service.RefreshTokenService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.ecommerce.user.exception.TokenRefreshException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +21,14 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
+    private static final String USER_ROLE = "USER";
+    private static final String USER_ALREADY_EXISTS_MESSAGE = "User with this email already exists";
+    private static final String USER_REGISTERED_SUCCESSFULLY_MESSAGE = "User Registered Successfully";
+    private static final String INVALID_CREDENTIALS_MESSAGE = "Invalid Credentials";
+    private static final String INVALID_ID_MESSAGE = "Email not Registered";
+    private static final String REFRESH_TOKEN_NOT_IN_DB_MESSAGE = "Refresh Token is not in DB..!!";
+    private static final String LOGOUT_SUCCESSFUL_MESSAGE = "Logout successful";
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
@@ -35,14 +45,15 @@ public class AuthController {
     @PostMapping("/register")
     public String register(@Valid @RequestBody RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("User with this email already exists");
+            throw new RuntimeException(USER_ALREADY_EXISTS_MESSAGE);
         }
         User user = new User();
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(USER_ROLE); // Explicitly set role to USER
         userRepository.save(user);
-        return "User Registered Successfully";
+        return USER_REGISTERED_SUCCESSFULLY_MESSAGE;
     }
 
     /**
@@ -54,11 +65,11 @@ public class AuthController {
      */
     @PostMapping("/login")
     public JwtResponse login(@Valid @RequestBody LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Invalid Credentials"));
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new BadCredentialsException(INVALID_ID_MESSAGE));
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new org.springframework.security.authentication.BadCredentialsException("Invalid Credentials");
+            throw new BadCredentialsException(INVALID_CREDENTIALS_MESSAGE);
         }
-        String token = jwtService.generateToken(user.getEmail());
+        String token = jwtService.generateToken(user);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getEmail());
         return JwtResponse.builder().token(token).refreshToken(refreshToken.getToken()).build();
     }
@@ -76,11 +87,11 @@ public class AuthController {
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUserInfo)
                 .map(userInfo -> {
-                    String accessToken = jwtService.generateToken(userInfo.getEmail());
+                    String accessToken = jwtService.generateToken(userInfo);
                     return JwtResponse.builder()
                             .token(accessToken)
                             .refreshToken(refreshTokenRequest.getToken()).build();
-                }).orElseThrow(() -> new com.ecommerce.user.exception.TokenRefreshException(refreshTokenRequest.getToken(), "Refresh Token is not in DB..!!"));
+                }).orElseThrow(() -> new TokenRefreshException(refreshTokenRequest.getToken(), REFRESH_TOKEN_NOT_IN_DB_MESSAGE));
     }
 
     /**
@@ -92,6 +103,6 @@ public class AuthController {
     @PostMapping("/logout")
     public String logout(@RequestBody LogoutRequest logoutRequest) {
         refreshTokenService.deleteByToken(logoutRequest.getRefreshToken());
-        return "Logout successful";
+        return LOGOUT_SUCCESSFUL_MESSAGE;
     }
 }

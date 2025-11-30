@@ -45,6 +45,6 @@ public class RefreshToken {
      * This creates a one-to-one relationship with the User entity.
      */
     @OneToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true)
     private User userInfo;
 }

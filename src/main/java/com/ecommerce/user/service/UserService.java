@@ -18,6 +18,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final String USER_NOT_FOUND = "User not found";
+    private static final String INVALID_OLD_PASSWORD = "Invalid old password";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -29,7 +32,7 @@ public class UserService {
      * @throws UsernameNotFoundException if the user is not found.
      */
     public UserProfileDto getUserProfile(String username) {
-        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
         return new UserProfileDto(user.getFullName(), user.getEmail(), user.getPhone(), user.getProfileImage());
     }
 
@@ -41,7 +44,7 @@ public class UserService {
      * @throws UsernameNotFoundException if the user is not found.
      */
     public void updateUserProfile(String username, UpdateProfileRequest request) {
-        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
         user.setFullName(request.getFullName());
         user.setPhone(request.getPhone());
         user.setProfileImage(request.getProfileImage());
@@ -57,9 +60,9 @@ public class UserService {
      * @throws IllegalArgumentException if the old password is invalid.
      */
     public void changePassword(String username, ChangePasswordRequest request) {
-        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Invalid old password");
+            throw new IllegalArgumentException(INVALID_OLD_PASSWORD);
         }
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);

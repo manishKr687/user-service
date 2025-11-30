@@ -1,19 +1,28 @@
 package com.ecommerce.user.service;
 
+import com.ecommerce.user.entity.User;
+import com.ecommerce.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This service provides utility methods for working with JSON Web Tokens (JWTs).
  * It handles the generation and validation of JWTs.
  */
 @Service
+@RequiredArgsConstructor
 public class JwtService {
+
+    private static final String ROLE_CLAIM = "role";
 
     @Value("${jwt.secret}")
     private String secret;
@@ -21,15 +30,20 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long expiration;
 
+    private final UserRepository userRepository;
+
     /**
-     * Generates a new JWT for the given username.
+     * Generates a new JWT for the given user.
      *
-     * @param username The username to include in the token.
+     * @param user The user for whom to generate the token.
      * @return A new JWT string.
      */
-    public String generateToken(String username) {
+    public String generateToken(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(ROLE_CLAIM, user.getRole()); // Include the user's role in claims
         return Jwts.builder()
-                .setSubject(username)
+                .setClaims(claims)
+                .setSubject(user.getEmail())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -53,9 +67,11 @@ public class JwtService {
      * @param userDetails The user details to validate against.
      * @return {@code true} if the token is valid, {@code false} otherwise.
      */
-    public boolean validateToken(String token, org.springframework.security.core.userdetails.UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    public boolean validateToken(String token, UserDetails userDetails) {
+        final Claims claims = extractAllClaims(token);
+        final String username = claims.getSubject();
+        final Date expiration = claims.getExpiration();
+        return username.equals(userDetails.getUsername()) && !expiration.before(new Date());
     }
 
     /**

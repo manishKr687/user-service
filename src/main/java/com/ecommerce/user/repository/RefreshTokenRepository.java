@@ -22,6 +22,14 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     Optional<RefreshToken> findByToken(String token);
 
     /**
+     * Finds a refresh token by the user associated with it.
+     *
+     * @param userInfo The user entity to search for.
+     * @return An {@link Optional} containing the found refresh token, or empty if not found.
+     */
+    Optional<RefreshToken> findByUserInfo(User userInfo);
+
+    /**
      * Deletes all refresh tokens associated with a specific user.
      *
      * @param user The user whose refresh tokens should be deleted.

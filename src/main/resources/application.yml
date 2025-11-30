@@ -22,3 +22,15 @@ rate:
   limit:
     capacity: 10
     refill-minutes: 1
+
+# ===============================
+# INITIAL ADMIN USER CONFIGURATION
+# ===============================
+# Configuration for the initial admin user to be created on startup if no admin exists.
+# In production, it is strongly recommended to override these values using environment variables
+# for better security, e.g., APP_ADMIN_EMAIL and APP_ADMIN_PASSWORD.
+app:
+  admin:
+    email: "admin@example.com"
+    password: "Password123@"
+    full-name: "Admin User"

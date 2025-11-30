@@ -10,6 +10,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; // Import for EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -31,8 +32,19 @@ import static org.springframework.security.config.Customizer.withDefaults;
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity // Enable method security
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+    private static final String[] AUTH_WHITELIST = {
+            "/auth/register",
+            "/auth/login",
+            "/auth/refresh"
+    };
+    private static final String ALLOWED_ORIGIN = "http://localhost:3000";
+    private static final String[] ALLOWED_METHODS = {"GET", "POST", "PUT", "DELETE", "OPTIONS"};
+    private static final String ALLOWED_HEADER = "*";
+    private static final String CORS_CONFIG_PATTERN = "/**";
 
     private final JwtAuthFilter jwtAuthFilter;
     private final CustomUserDetailsService userDetailsService;
@@ -49,7 +61,7 @@ public class SecurityConfig {
         return http.csrf(csrf -> csrf.disable())
                 .cors(withDefaults()) // Enable CORS with default settings
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/refresh").permitAll()
+                        .requestMatchers(HttpMethod.POST, AUTH_WHITELIST).permitAll()
                         .anyRequest().authenticated()
                 )
                 // Configure session management to be stateless, as we are using JWTs.
@@ -68,12 +80,12 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedOrigins(List.of(ALLOWED_ORIGIN));
+        configuration.setAllowedMethods(List.of(ALLOWED_METHODS));
+        configuration.setAllowedHeaders(List.of(ALLOWED_HEADER));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration(CORS_CONFIG_PATTERN, configuration);
         return source;
     }
 

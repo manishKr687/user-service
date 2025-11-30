@@ -22,6 +22,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AddressService {
 
+    private static final String USER_NOT_FOUND = "User not found";
+    private static final String ADDRESS_NOT_FOUND = "Address not found";
+
     private final AddressRepository addressRepository;
     private final UserRepository userRepository;
 
@@ -33,7 +36,7 @@ public class AddressService {
      * @throws UsernameNotFoundException if the user is not found.
      */
     public List<AddressDto> getAddresses(String username) {
-        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
         return user.getAddresses().stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
@@ -45,7 +48,7 @@ public class AddressService {
      * @throws UsernameNotFoundException if the user is not found.
      */
     public void addAddress(String username, AddressRequest request) {
-        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = userRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
         Address address = new Address();
         mapToEntity(request, address);
         address.setUser(user);
@@ -63,7 +66,7 @@ public class AddressService {
      * @throws RuntimeException if the address is not found.
      */
     public void updateAddress(Long addressId, AddressRequest request) {
-        Address address = addressRepository.findById(addressId).orElseThrow(() -> new RuntimeException("Address not found"));
+        Address address = addressRepository.findById(addressId).orElseThrow(() -> new RuntimeException(ADDRESS_NOT_FOUND));
         mapToEntity(request, address);
         if (request.isDefault()) {
             address.getUser().getAddresses().forEach(a -> a.setDefault(false));
@@ -88,7 +91,7 @@ public class AddressService {
      * @throws RuntimeException if the address is not found.
      */
     public void setDefaultAddress(Long addressId) {
-        Address address = addressRepository.findById(addressId).orElseThrow(() -> new RuntimeException("Address not found"));
+        Address address = addressRepository.findById(addressId).orElseThrow(() -> new RuntimeException(ADDRESS_NOT_FOUND));
         address.getUser().getAddresses().forEach(a -> a.setDefault(false));
         address.setDefault(true);
         addressRepository.save(address);

@@ -12,6 +12,8 @@ import java.time.LocalDateTime;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final String X_RATE_LIMIT_RETRY_AFTER_SECONDS_HEADER = "X-Rate-Limit-Retry-After-Seconds";
+
     @ExceptionHandler(RateLimitExceededException.class)
     public ResponseEntity<ErrorResponse> handleRateLimitExceededException(
             RateLimitExceededException ex,
@@ -26,7 +28,7 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                .header("X-Rate-Limit-Retry-After-Seconds", String.valueOf(ex.getRetryAfterSeconds()))
+                .header(X_RATE_LIMIT_RETRY_AFTER_SECONDS_HEADER, String.valueOf(ex.getRetryAfterSeconds()))
                 .body(errorResponse);
     }
 }

@@ -18,6 +18,11 @@ import java.time.Duration;
 @Component
 public class RateLimitingInterceptor implements HandlerInterceptor {
 
+    private static final String X_RATE_LIMIT_REMAINING_HEADER = "X-Rate-Limit-Remaining";
+    private static final String TOO_MANY_REQUESTS_MESSAGE = "Too many requests";
+    private static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
+    private static final String IP_ADDRESS_SEPARATOR = ",";
+
     private final RateLimitConfig rateLimitConfig;
 
     // In-memory storage of buckets per IP
@@ -40,7 +45,7 @@ public class RateLimitingInterceptor implements HandlerInterceptor {
 
         if (probe.isConsumed()) {
             response.addHeader(
-                    "X-Rate-Limit-Remaining",
+                    X_RATE_LIMIT_REMAINING_HEADER,
                     String.valueOf(probe.getRemainingTokens())
             );
             return true;
@@ -48,7 +53,7 @@ public class RateLimitingInterceptor implements HandlerInterceptor {
             long waitForRefillSeconds =
                     probe.getNanosToWaitForRefill() / 1_000_000_000;
 
-            throw new RateLimitExceededException("Too many requests", waitForRefillSeconds);
+            throw new RateLimitExceededException(TOO_MANY_REQUESTS_MESSAGE, waitForRefillSeconds);
         }
     }
 
@@ -69,10 +74,10 @@ public class RateLimitingInterceptor implements HandlerInterceptor {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String xfHeader = request.getHeader("X-Forwarded-For");
+        String xfHeader = request.getHeader(X_FORWARDED_FOR_HEADER);
         if (xfHeader == null || xfHeader.isBlank()) {
             return request.getRemoteAddr();
         }
-        return xfHeader.split(",")[0].trim();
+        return xfHeader.split(IP_ADDRESS_SEPARATOR)[0].trim();
     }
 }
